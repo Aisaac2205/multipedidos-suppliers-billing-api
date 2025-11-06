@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +18,15 @@ import java.util.List;
  * Controlador REST para gestión de facturas.
  */
 @RestController
-@RequestMapping("/facturas")
-@RequiredArgsConstructor
+@RequestMapping("/api/facturas")
 @Tag(name = "Facturas", description = "API para gestión de facturas")
 public class FacturaController {
 
     private final FacturaService facturaService;
+
+    public FacturaController(FacturaService facturaService) {
+        this.facturaService = facturaService;
+    }
 
     @PostMapping
     @Operation(summary = "Registrar una factura", description = "Crea una nueva factura con cálculo automático de total y descuentos")
@@ -54,6 +56,17 @@ public class FacturaController {
     public ResponseEntity<FacturaDTO> obtenerFactura(@PathVariable Long id) {
         FacturaDTO factura = facturaService.obtenerFactura(id);
         return ResponseEntity.ok(factura);
+    }
+
+    @GetMapping("/proveedor/{proveedorId}")
+    @Operation(summary = "Obtener facturas por proveedor", description = "Obtiene todas las facturas de un proveedor específico")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de facturas obtenida correctamente"),
+            @ApiResponse(responseCode = "404", description = "Proveedor no encontrado")
+    })
+    public ResponseEntity<List<FacturaDTO>> obtenerFacturasPorProveedor(@PathVariable Long proveedorId) {
+        List<FacturaDTO> facturas = facturaService.listarFacturasPorProveedor(proveedorId);
+        return ResponseEntity.ok(facturas);
     }
 }
 
