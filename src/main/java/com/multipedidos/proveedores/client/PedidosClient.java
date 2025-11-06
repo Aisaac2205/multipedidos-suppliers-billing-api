@@ -4,7 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,9 +18,9 @@ import java.util.List;
  * Cliente para comunicación con el microservicio de Clientes y Pedidos.
  */
 @Component
-@Slf4j
 public class PedidosClient {
 
+    private static final Logger log = LoggerFactory.getLogger(PedidosClient.class);
     private final WebClient webClient;
 
     public PedidosClient(@Value("${microservice.clientes-pedidos.url}") String baseUrl) {
@@ -35,7 +36,7 @@ public class PedidosClient {
         try {
             log.info("Consultando pedido {} en microservicio A", pedidoId);
             return webClient.get()
-                    .uri("/pedidos/{id}", pedidoId)
+                    .uri("/api/pedidos/{id}", pedidoId)
                     .retrieve()
                     .bodyToMono(PedidoDTO.class)
                     .block();
