@@ -1,0 +1,413 @@
+openapi: 3.0.3
+info:
+  title: MultiPedidos API - Gestión de Proveedores y Facturación
+  version: 1.0.0
+  description: |
+    API RESTful para la gestión de proveedores y facturación.
+    
+    Funcionalidades principales:
+    - Registro y consulta de proveedores
+    - Creación de facturas con referencias a pedidos
+    - Integración con Microservicio A para validación de pedidos
+    - Aplicación de descuentos sobre totales de facturación
+    - Comunicación entre microservicios mediante HTTP/REST
+    
+    Base de Datos: PostgreSQL
+    Puerto del Servicio: 8081
+  contact:
+    name: Equipo de Desarrollo - MultiPedidos S.A.
+    email: dev@multipedidos.com
+    url: https://multipedidos.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:8081
+    description: Servidor de Desarrollo Local
+  - url: https://api.multipedidos.com
+    description: Servidor de Producción
+
+tags:
+  - name: Proveedores
+    description: Operaciones relacionadas con la gestión de proveedores
+  - name: Facturas
+    description: Operaciones relacionadas con la gestión de facturas
+
+paths:
+  /api/proveedores:
+    get:
+      tags:
+        - Proveedores
+      summary: Listar proveedores
+      description: Obtiene la lista completa de proveedores registrados en el sistema
+      operationId: listarProveedores
+      responses:
+        '200':
+          description: Lista de proveedores obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProveedorDTO'
+              example:
+                - id: 1
+                  nombre: "Proveedor ABC"
+                  correo: "contacto@proveedor.com"
+        '500':
+          $ref: '#/components/responses/Error500'
+    
+    post:
+      tags:
+        - Proveedores
+      summary: Registrar un proveedor
+      description: Registra un nuevo proveedor en el sistema con validación de email
+      operationId: crearProveedor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProveedorInputDTO'
+            example:
+              nombre: "Proveedor XYZ"
+              correo: "info@proveedorxyz.com"
+      responses:
+        '201':
+          description: Proveedor creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProveedorDTO'
+              example:
+                id: 1
+                nombre: "Proveedor XYZ"
+                correo: "info@proveedorxyz.com"
+        '400':
+          $ref: '#/components/responses/Error400'
+        '500':
+          $ref: '#/components/responses/Error500'
+
+  /api/proveedores/{id}:
+    get:
+      tags:
+        - Proveedores
+      summary: Obtener un proveedor por ID
+      description: Obtiene los detalles de un proveedor específico
+      operationId: obtenerProveedor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del proveedor
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        '200':
+          description: Proveedor encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProveedorDTO'
+              example:
+                id: 1
+                nombre: "Proveedor ABC"
+                correo: "contacto@proveedor.com"
+        '404':
+          $ref: '#/components/responses/Error404'
+        '500':
+          $ref: '#/components/responses/Error500'
+
+  /api/facturas:
+    get:
+      tags:
+        - Facturas
+      summary: Listar todas las facturas
+      description: Obtiene la lista completa de facturas registradas en el sistema
+      operationId: listarFacturas
+      responses:
+        '200':
+          description: Lista de facturas obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FacturaDTO'
+              example:
+                - id: 1
+                  proveedorId: 1
+                  pedidos:
+                    - pedidoId: 1
+                      total: 346.79
+                  totalFactura: 294.77
+        '500':
+          $ref: '#/components/responses/Error500'
+    
+    post:
+      tags:
+        - Facturas
+      summary: Registrar una factura
+      description: |
+        Crea una nueva factura con cálculo automático de total y descuentos.
+        Valida que el proveedor exista y que los pedidos referenciados existan en el Microservicio A.
+      operationId: crearFactura
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacturaInputDTO'
+            example:
+              proveedorId: 1
+              pedidos:
+                - pedidoId: 1
+                  total: 346.79
+      responses:
+        '201':
+          description: Factura registrada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacturaDTO'
+              example:
+                id: 1
+                proveedorId: 1
+                pedidos:
+                  - pedidoId: 1
+                    total: 346.79
+                totalFactura: 294.77
+        '400':
+          $ref: '#/components/responses/Error400'
+        '500':
+          $ref: '#/components/responses/Error500'
+
+  /api/facturas/{id}:
+    get:
+      tags:
+        - Facturas
+      summary: Obtener factura por ID
+      description: Obtiene los detalles de una factura específica y su total
+      operationId: obtenerFactura
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la factura
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        '200':
+          description: Factura encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacturaDTO'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '500':
+          $ref: '#/components/responses/Error500'
+
+  /api/facturas/proveedor/{proveedorId}:
+    get:
+      tags:
+        - Facturas
+      summary: Obtener facturas por proveedor
+      description: Obtiene todas las facturas de un proveedor específico
+      operationId: obtenerFacturasPorProveedor
+      parameters:
+        - name: proveedorId
+          in: path
+          required: true
+          description: ID del proveedor
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        '200':
+          description: Lista de facturas obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FacturaDTO'
+        '404':
+          description: Proveedor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/Error500'
+
+components:
+  schemas:
+    ProveedorDTO:
+      type: object
+      required:
+        - id
+        - nombre
+        - correo
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID único del proveedor
+          example: 1
+        nombre:
+          type: string
+          description: Nombre del proveedor
+          example: "Proveedor ABC"
+        correo:
+          type: string
+          format: email
+          description: Correo electrónico del proveedor
+          example: "contacto@proveedor.com"
+    
+    ProveedorInputDTO:
+      type: object
+      required:
+        - nombre
+        - correo
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          description: Nombre del proveedor
+          example: "Proveedor ABC"
+        correo:
+          type: string
+          format: email
+          description: Correo electrónico del proveedor
+          example: "contacto@proveedor.com"
+    
+    FacturaDTO:
+      type: object
+      required:
+        - id
+        - proveedorId
+        - pedidos
+        - totalFactura
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID único de la factura
+          example: 1
+        proveedorId:
+          type: integer
+          format: int64
+          description: ID del proveedor
+          example: 1
+        pedidos:
+          type: array
+          items:
+            $ref: '#/components/schemas/PedidoReferenciaDTO'
+          description: Lista de referencias a pedidos
+        totalFactura:
+          type: number
+          format: decimal
+          description: Total de la factura con descuentos aplicados
+          example: 294.77
+    
+    PedidoReferenciaDTO:
+      type: object
+      required:
+        - pedidoId
+        - total
+      properties:
+        pedidoId:
+          type: integer
+          format: int64
+          description: ID del pedido referenciado
+          example: 1
+        total:
+          type: number
+          format: decimal
+          description: Total del pedido
+          example: 346.79
+    
+    FacturaInputDTO:
+      type: object
+      required:
+        - proveedorId
+        - pedidos
+      properties:
+        proveedorId:
+          type: integer
+          format: int64
+          description: ID del proveedor
+          example: 1
+        pedidos:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PedidoReferenciaDTO'
+          description: Lista de referencias a pedidos que forman parte de la factura
+    
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+          description: Código de estado HTTP
+          example: 400
+        error:
+          type: string
+          description: Tipo de error
+          example: "Bad Request"
+        message:
+          type: string
+          description: Mensaje de error descriptivo
+          example: "El proveedor con ID 999 no existe"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp del error
+          example: "2024-01-15T10:30:00Z"
+
+  responses:
+    Error400:
+      description: Datos inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 400
+            error: "Bad Request"
+            message: "La factura debe tener al menos un pedido"
+            timestamp: "2024-01-15T10:30:00Z"
+    
+    Error404:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            error: "Not Found"
+            message: "Factura con ID 999 no encontrada"
+            timestamp: "2024-01-15T10:30:00Z"
+    
+    Error500:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            error: "Internal Server Error"
+            message: "Error al procesar la solicitud"
+            timestamp: "2024-01-15T10:30:00Z"
+
