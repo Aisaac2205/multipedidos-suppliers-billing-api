@@ -6,6 +6,14 @@ import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.media.NumberSchema;
+import io.swagger.v3.oas.models.media.IntegerSchema;
+import io.swagger.v3.oas.models.media.BooleanSchema;
+import io.swagger.v3.oas.models.media.ArraySchema;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,7 +59,7 @@ public class OpenApiConfig {
                                 Base de Datos: PostgreSQL
                                 Puerto del Servicio: 8081
                                 
-                                Especificación OpenAPI: 3.0.3
+                                Especificación OpenAPI: 3.0.1
                                 """)
                         .contact(new Contact()
                                 .name("Equipo de Desarrollo - MultiPedidos S.A.")
@@ -73,7 +81,41 @@ public class OpenApiConfig {
                 ))
                 .externalDocs(new ExternalDocumentation()
                         .description("Documentación completa del proyecto")
-                        .url("https://github.com/multipedidos/docs"));
+                        .url("https://github.com/multipedidos/docs"))
+                .components(new Components()
+                        .addSchemas("ProveedorDTO", new ObjectSchema()
+                                .addProperty("id", new IntegerSchema().format("int64").description("ID único del proveedor"))
+                                .addProperty("nombre", new StringSchema().description("Nombre del proveedor"))
+                                .addProperty("correo", new StringSchema().format("email").description("Correo electrónico del proveedor"))
+                                .addProperty("telefono", new StringSchema().description("Teléfono del proveedor"))
+                                .addProperty("direccion", new StringSchema().description("Dirección del proveedor")))
+                        .addSchemas("ProveedorInputDTO", new ObjectSchema()
+                                .addProperty("nombre", new StringSchema().description("Nombre del proveedor").example("Proveedor ABC"))
+                                .addProperty("correo", new StringSchema().format("email").description("Correo electrónico del proveedor").example("contacto@proveedor.com"))
+                                .addProperty("telefono", new StringSchema().description("Teléfono del proveedor").example("+1234567890"))
+                                .addProperty("direccion", new StringSchema().description("Dirección del proveedor").example("Calle Principal 123")))
+                        .addSchemas("FacturaDTO", new ObjectSchema()
+                                .addProperty("id", new IntegerSchema().format("int64").description("ID único de la factura"))
+                                .addProperty("proveedorId", new IntegerSchema().format("int64").description("ID del proveedor"))
+                                .addProperty("pedidos", new ArraySchema().items(new ObjectSchema()
+                                        .addProperty("pedidoId", new IntegerSchema().format("int64").description("ID del pedido"))
+                                        .addProperty("total", new NumberSchema().format("decimal").description("Total del pedido"))))
+                                .addProperty("totalFactura", new NumberSchema().format("decimal").description("Total de la factura con descuentos"))
+                                .addProperty("estado", new StringSchema().description("Estado de la factura"))
+                                .addProperty("fechaCreacion", new StringSchema().format("date-time").description("Fecha de creación")))
+                        .addSchemas("FacturaInputDTO", new ObjectSchema()
+                                .addProperty("proveedorId", new IntegerSchema().format("int64").description("ID del proveedor"))
+                                .addProperty("pedidos", new ArraySchema().items(new ObjectSchema()
+                                        .addProperty("pedidoId", new IntegerSchema().format("int64").description("ID del pedido"))
+                                        .addProperty("total", new NumberSchema().format("decimal").description("Total del pedido")))))
+                        .addSchemas("PedidoReferenciaDTO", new ObjectSchema()
+                                .addProperty("pedidoId", new IntegerSchema().format("int64").description("ID del pedido"))
+                                .addProperty("total", new NumberSchema().format("decimal").description("Total del pedido")))
+                        .addSchemas("ErrorResponse", new ObjectSchema()
+                                .addProperty("status", new IntegerSchema().description("Código de estado HTTP"))
+                                .addProperty("error", new StringSchema().description("Tipo de error"))
+                                .addProperty("message", new StringSchema().description("Mensaje de error"))
+                                .addProperty("timestamp", new StringSchema().format("date-time").description("Timestamp del error"))));
     }
 }
 

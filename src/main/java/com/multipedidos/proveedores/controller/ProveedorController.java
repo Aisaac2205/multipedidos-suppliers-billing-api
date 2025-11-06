@@ -19,7 +19,7 @@ import java.util.List;
  * Controlador REST para gestión de proveedores.
  */
 @RestController
-@RequestMapping("/proveedores")
+@RequestMapping("/api/proveedores")
 @RequiredArgsConstructor
 @Tag(name = "Proveedores", description = "API para gestión de proveedores")
 public class ProveedorController {
