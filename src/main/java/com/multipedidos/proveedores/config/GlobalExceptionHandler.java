@@ -2,7 +2,8 @@ package com.multipedidos.proveedores.config;
 
 import com.multipedidos.common.exceptions.DatosInvalidosException;
 import com.multipedidos.common.exceptions.RecursoNoEncontradoException;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -18,8 +19,9 @@ import java.util.Map;
  * Manejador global de excepciones para el microservicio.
  */
 @RestControllerAdvice
-@Slf4j
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<ErrorResponse> handleRecursoNoEncontrado(RecursoNoEncontradoException ex) {
@@ -79,16 +81,85 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
-    @lombok.Data
-    @lombok.Builder
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
     public static class ErrorResponse {
         private LocalDateTime timestamp;
         private int status;
         private String error;
         private String message;
         private Map<String, String> detalles;
+
+        public ErrorResponse() {
+        }
+
+        public ErrorResponse(LocalDateTime timestamp, int status, String error, String message, Map<String, String> detalles) {
+            this.timestamp = timestamp;
+            this.status = status;
+            this.error = error;
+            this.message = message;
+            this.detalles = detalles;
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public static class Builder {
+            private LocalDateTime timestamp;
+            private int status;
+            private String error;
+            private String message;
+            private Map<String, String> detalles;
+
+            public Builder timestamp(LocalDateTime timestamp) {
+                this.timestamp = timestamp;
+                return this;
+            }
+
+            public Builder status(int status) {
+                this.status = status;
+                return this;
+            }
+
+            public Builder error(String error) {
+                this.error = error;
+                return this;
+            }
+
+            public Builder message(String message) {
+                this.message = message;
+                return this;
+            }
+
+            public Builder detalles(Map<String, String> detalles) {
+                this.detalles = detalles;
+                return this;
+            }
+
+            public ErrorResponse build() {
+                return new ErrorResponse(timestamp, status, error, message, detalles);
+            }
+        }
+
+        // Getters
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
+
+        public int getStatus() {
+            return status;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public Map<String, String> getDetalles() {
+            return detalles;
+        }
     }
 }
 
