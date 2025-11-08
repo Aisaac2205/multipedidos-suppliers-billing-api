@@ -1,32 +1,39 @@
 package com.multipedidos.proveedores.client;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.multipedidos.common.exceptions.IntegracionMicroserviciosException;
+import com.multipedidos.common.utils.IntegradorMicroservicios;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * Cliente para comunicación con el microservicio de Clientes y Pedidos.
+ * Cliente para comunicación con el microservicio de Clientes y Pedidos utilizando
+ * la utilería del componente C.
  */
 @Component
 public class PedidosClient {
 
     private static final Logger log = LoggerFactory.getLogger(PedidosClient.class);
-    private final WebClient webClient;
 
-    public PedidosClient(@Value("${microservice.clientes-pedidos.url}") String baseUrl) {
-        this.webClient = WebClient.builder()
-                .baseUrl(baseUrl)
-                .build();
+    private final ObjectMapper objectMapper;
+    private final String baseUrl;
+
+    public PedidosClient(ObjectMapper objectMapper,
+                         @Value("${microservice.clientes-pedidos.url:http://localhost:8080}") String baseUrl) {
+        this.objectMapper = objectMapper;
+        this.baseUrl = baseUrl;
     }
 
     /**
@@ -35,16 +42,24 @@ public class PedidosClient {
     public PedidoDTO obtenerPedido(Long pedidoId) {
         try {
             log.info("Consultando pedido {} en microservicio A", pedidoId);
-            return webClient.get()
-                    .uri("/api/pedidos/{id}", pedidoId)
-                    .retrieve()
-                    .bodyToMono(PedidoDTO.class)
-                    .block();
-        } catch (WebClientResponseException.NotFound e) {
-            log.error("Pedido {} no encontrado en microservicio A", pedidoId);
+            Optional<String> respuesta = IntegradorMicroservicios.obtenerPedidoJson(baseUrl, pedidoId);
+            return respuesta
+                    .map(json -> parsearPedido(json, pedidoId))
+                    .orElse(null);
+        } catch (IntegracionMicroserviciosException e) {
+            log.error("Error de integración al consultar pedido {}: {}", pedidoId, e.getMessage());
             return null;
         } catch (Exception e) {
-            log.error("Error al consultar pedido {}: {}", pedidoId, e.getMessage());
+            log.error("Error inesperado al consultar pedido {}: {}", pedidoId, e.getMessage());
+            return null;
+        }
+    }
+
+    private PedidoDTO parsearPedido(String json, Long pedidoId) {
+        try {
+            return objectMapper.readValue(json, PedidoDTO.class);
+        } catch (Exception e) {
+            log.error("No se pudo parsear el pedido {} devuelto por el microservicio A", pedidoId, e);
             return null;
         }
     }
@@ -53,13 +68,8 @@ public class PedidosClient {
      * Verifica si un pedido existe en el microservicio A.
      */
     public boolean existePedido(Long pedidoId) {
-        try {
-            PedidoDTO pedido = obtenerPedido(pedidoId);
-            return pedido != null;
-        } catch (Exception e) {
-            log.error("Error al verificar existencia del pedido {}: {}", pedidoId, e.getMessage());
-            return false;
-        }
+        PedidoDTO pedido = obtenerPedido(pedidoId);
+        return pedido != null;
     }
 
     /**
@@ -85,4 +95,5 @@ public class PedidosClient {
         private BigDecimal precio;
     }
 }
+
 
