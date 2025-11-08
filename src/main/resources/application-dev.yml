@@ -1,22 +1,29 @@
 spring:
   application:
     name: microservice-proveedores-facturacion
-  
+
+  # Perfil de desarrollo - usar H2 en memoria
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/proveedores_facturacion?sslmode=require}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:changeme}
-    driver-class-name: org.postgresql.Driver
-  
+    url: jdbc:h2:mem:testdb2
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
     open-in-view: false
+
+  # Habilitar consola H2 para desarrollo
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
 server:
   port: ${SERVER_PORT:8081}
@@ -28,22 +35,22 @@ microservice:
   clientes-pedidos:
     url: ${CLIENTES_API_URL:http://localhost:8080}
 
-# Configuración de OpenAPI/Swagger - Estándar OAS 3.0.3
+# Configuración de OpenAPI/Swagger
 springdoc:
   api-docs:
-    path: /api-docs                    # Endpoint para especificación OpenAPI JSON
+    path: /api-docs
     enabled: true
   swagger-ui:
-    path: /swagger-ui.html             # Endpoint para interfaz Swagger UI
+    path: /swagger-ui.html
     enabled: true
-    operationsSorter: method           # Ordenar por método HTTP (GET, POST, etc)
-    tagsSorter: alpha                  # Ordenar tags alfabéticamente
-    display-request-duration: true     # Mostrar duración de requests
-    default-models-expand-depth: 2     # Expandir modelos en documentación
+    operationsSorter: method
+    tagsSorter: alpha
+    display-request-duration: true
+    default-models-expand-depth: 2
     default-model-expand-depth: 2
-  show-actuator: true                  # Mostrar endpoints de actuator
+  show-actuator: true
 
-# Spring Boot Actuator - Monitoreo y Métricas
+# Spring Boot Actuator
 management:
   endpoints:
     web:
@@ -61,7 +68,7 @@ management:
 info:
   app:
     name: Microservicio Proveedores y Facturación
-    description: API para gestión de proveedores y facturación con PostgreSQL
+    description: API para gestión de proveedores y facturación (Desarrollo con H2)
     version: 1.0.0
     port: 8081
 
@@ -71,6 +78,6 @@ logging:
     com.multipedidos: DEBUG
     org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
+    root: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-
